@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SlimTrack — дневник похудения</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+
+<!-- iOS: режим «как приложение» -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SlimTrack">
+<meta name="theme-color" content="#f2f2f7">
+
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Онбординг (первый запуск) -->
+<div class="onboard" id="onboard" hidden>
+  <div class="ob-top" id="obTop"></div>
+  <div class="ob-body" id="obBody"></div>
+  <div class="ob-foot">
+    <div class="ob-dots" id="obDots"></div>
+    <button class="btn ob-next" id="obNext">Далее</button>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <h1 id="screenTitle">Сегодня</h1>
+    <div class="topbar-right" id="topbarRight"></div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="screen" id="screen-today"></section>
+  <section class="screen" id="screen-diary" hidden></section>
+  <section class="screen" id="screen-ai" hidden></section>
+  <section class="screen" id="screen-progress" hidden></section>
+  <section class="screen" id="screen-profile" hidden></section>
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tab is-active" data-screen="today">
+    <svg viewBox="0 0 24 24" class="tab-ico"><path d="M12 3 3 10.5V21h7v-6h4v6h7V10.5z"/></svg>
+    <span>Сегодня</span>
+  </button>
+  <button class="tab" data-screen="diary">
+    <svg viewBox="0 0 24 24" class="tab-ico"><path d="M5 3h11l3 3v15H5zM8 12h8M8 16h8M8 8h5"/></svg>
+    <span>Дневник</span>
+  </button>
+  <button class="tab" data-screen="ai">
+    <svg viewBox="0 0 24 24" class="tab-ico"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg>
+    <span>ИИ</span>
+  </button>
+  <button class="tab" data-screen="progress">
+    <svg viewBox="0 0 24 24" class="tab-ico"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 4-6"/></svg>
+    <span>Прогресс</span>
+  </button>
+  <button class="tab" data-screen="profile">
+    <svg viewBox="0 0 24 24" class="tab-ico"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8m-7 9a7 7 0 0 1 14 0"/></svg>
+    <span>Профиль</span>
+  </button>
+</nav>
+
+<!-- Нижняя панель (модалка) -->
+<div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-head">
+    <span id="sheetTitle">Добавить</span>
+    <button class="icon-btn" id="sheetClose" aria-label="Закрыть">✕</button>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<!-- Камера: capture="environment" открывает камеру напрямую на iOS/Android -->
+<input type="file" accept="image/*" capture="environment" id="photoCamera" hidden>
+<input type="file" accept="image/*" id="photoGallery" hidden>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="foods.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function (e) {
+        console.log('SW: ' + e.message);
+      });
+    });
+  }
+</script>
+</body>
+</html>
