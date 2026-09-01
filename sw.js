@@ -1,5 +1,5 @@
 // Простой офлайн-кэш: приложение открывается без интернета
-const CACHE = 'slimtrack-v4';
+const CACHE = 'slimtrack-v5-dark';
 const FILES = [
   './',
   './index.html',

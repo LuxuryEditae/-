@@ -189,15 +189,15 @@
     var tg = targets();
 
     if (s === 0) {
-      html = '<div class="ob-hero-img"><img src="icons/icon-180.png" width="92" height="92" alt="" style="border-radius:21px"></div>' +
+      html = '<div class="ob-hero-img"><img src="icons/icon-180.png" width="96" height="96" alt="" style="border-radius:22px;box-shadow:0 8px 30px rgba(0,0,0,0.5)"></div>' +
         '<h1 class="ob-title">Привет. Давай познакомимся</h1>' +
         '<p class="ob-sub">Я посчитаю твою норму калорий и помогу её придерживаться. Пара вопросов — и всё готово.</p>' +
-        '<div style="height:16px"></div>' +
-        obFeat('#eaf4ff', '#0a84ff', '<path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1.2-2h6.2l1.2 2h1.7A2.5 2.5 0 0 1 20 8.5v9A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.6"/>',
+        '<div style="height:18px"></div>' +
+        obFeat('rgba(10,132,255,0.16)', '#0a84ff', '<path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1.2-2h6.2l1.2 2h1.7A2.5 2.5 0 0 1 20 8.5v9A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.6"/>',
           'Фото еды → калории', 'Сфоткай тарелку, ИИ определит блюдо и посчитает КБЖУ') +
-        obFeat('#e9f9ef', '#34c759', '<path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.7 8.7 0 0 1-3.8-.9L3 20l1.1-4.6A8.3 8.3 0 0 1 3.2 11 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/>',
+        obFeat('rgba(198,255,0,0.14)', '#c6ff00', '<path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.7 8.7 0 0 1-3.8-.9L3 20l1.1-4.6A8.3 8.3 0 0 1 3.2 11 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/>',
           'ИИ-нутрициолог', 'Скажет, что съесть, чтобы уложиться в норму') +
-        obFeat('#f1eeff', '#5e5ce6', '<path d="M4 19V5M4 19h16M7 15l4-5 3 3 4-6"/>',
+        obFeat('rgba(255,55,95,0.16)', '#ff375f', '<path d="M4 19V5M4 19h16M7 15l4-5 3 3 4-6"/>',
           'Вес и прогресс', 'График, темп и честная статистика без самообмана');
       nextLabel = 'Начать';
 
@@ -259,7 +259,7 @@
         '<div><b>' + tg.fat + ' г</b><span>жиры</span></div>' +
         '<div><b>' + tg.carbs + ' г</b><span>углеводы</span></div>' +
         '</div></div>' +
-        '<div class="card" style="margin-top:20px;background:#f7f7f9;border:0">' +
+        '<div class="card" style="margin-top:22px">' +
         '<div class="small muted" style="line-height:1.55">Из ' + tg.tdee + ' ккал, что ты тратишь за день, ' + tg.bmr +
         ' уходит просто на поддержание жизни. Дефицит ' + p.deficit + ' ккал — это примерно −' + n1(p.deficit * 7 / 7700) +
         ' кг в неделю. До цели ' + n1(Math.max(0, lastWeight() - p.goalWeight)) + ' кг.<br><br>' +
@@ -895,39 +895,49 @@
   }
 
   function activityRings(pKcal, pProt, pWat) {
-    var W = 160, cx = 80, cy = 80;
-    function ring(r, p, color, gap) {
+    var W = 200, cx = 100, cy = 100;
+    function ring(r, p, gradId, gap) {
       var c = 2 * Math.PI * r;
       var pp = Math.max(0, Math.min(1, p));
-      var off = c - c * pp;
-      return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + color +
-        '" stroke-width="' + gap + '" stroke-linecap="round"' +
+      return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="url(#' + gradId + ')"' +
+        ' stroke-width="' + gap + '" stroke-linecap="round"' +
         ' stroke-dasharray="' + (c * pp).toFixed(1) + ' ' + c.toFixed(1) + '"' +
-        ' stroke-dashoffset="' + (c / 2).toFixed(1) + '"' +
+        ' stroke-dashoffset="0"' +
         ' transform="rotate(-90 ' + cx + ' ' + cy + ')"/>';
     }
     return '<svg width="' + W + '" height="' + W + '" viewBox="0 0 ' + W + ' ' + W + '">' +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="70" fill="none" stroke="#fde8ea" stroke-width="10"/>' +
-      ring(70, pKcal, '#ff3b30', 10) +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="56" fill="none" stroke="#dff1e1" stroke-width="10"/>' +
-      ring(56, pProt, '#34c759', 10) +
-      '<circle cx="' + cx + '" cy="' + cy + '" r="42" fill="none" stroke="#dceaff" stroke-width="10"/>' +
-      ring(42, pWat, '#0a84ff', 10) +
+      '<defs>' +
+      '<linearGradient id="gMove" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0%" stop-color="#fa114f"/><stop offset="100%" stop-color="#ff375f"/>' +
+      '</linearGradient>' +
+      '<linearGradient id="gExercise" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0%" stop-color="#92e82a"/><stop offset="100%" stop-color="#c6ff00"/>' +
+      '</linearGradient>' +
+      '<linearGradient id="gStand" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0%" stop-color="#1eeaef"/><stop offset="100%" stop-color="#00c7be"/>' +
+      '</linearGradient>' +
+      '</defs>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="86" fill="none" stroke="rgba(250,17,79,0.18)" stroke-width="14"/>' +
+      ring(86, pKcal, 'gMove', 14) +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="66" fill="none" stroke="rgba(146,232,42,0.18)" stroke-width="14"/>' +
+      ring(66, pProt, 'gExercise', 14) +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="46" fill="none" stroke="rgba(30,234,239,0.18)" stroke-width="14"/>' +
+      ring(46, pWat, 'gStand', 14) +
       '</svg>';
   }
 
   function ring(pct, over, main, sub) {
     var r = 48, c = 2 * Math.PI * r;
     var p = Math.max(0, Math.min(1, pct));
-    var stroke = over ? '#ff3b30' : 'url(#ringGrad)';
+    var stroke = over ? '#ff375f' : 'url(#ringGrad)';
     return '<div class="ring">' +
       '<svg width="122" height="122" viewBox="0 0 118 118">' +
       '<defs>' +
       '<linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">' +
-      '<stop offset="0%" stop-color="#34c759"/><stop offset="55%" stop-color="#2f9fe0"/><stop offset="100%" stop-color="#0a84ff"/>' +
+      '<stop offset="0%" stop-color="#c6ff00"/><stop offset="55%" stop-color="#1eeaef"/><stop offset="100%" stop-color="#0a84ff"/>' +
       '</linearGradient>' +
       '</defs>' +
-      '<circle cx="59" cy="59" r="' + r + '" fill="none" stroke="#ececf0" stroke-width="11"/>' +
+      '<circle cx="59" cy="59" r="' + r + '" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="11"/>' +
       '<circle cx="59" cy="59" r="' + r + '" fill="none" stroke="' + stroke + '" stroke-width="11" stroke-linecap="round" ' +
       'stroke-dasharray="' + (c * p).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 59 59)"/>' +
       '</svg>' +
@@ -971,9 +981,9 @@
       '<div class="rings-sub">' + (over ? 'перебор' : 'осталось') + '</div></div>' +
       '</div>' +
       '<div class="rings-legend">' +
-      '<div class="leg"><span class="dot" style="background:#ff3b30"></span><div><b>' + t.kcal + '</b><span>из ' + t.budget + ' ккал</span></div></div>' +
-      '<div class="leg"><span class="dot" style="background:#34c759"></span><div><b>' + t.p + 'г</b><span>белок из ' + tg.protein + 'г</span></div></div>' +
-      '<div class="leg"><span class="dot" style="background:#0a84ff"></span><div><b>' + (d.water || 0) + '</b><span>вода из ' + S.settings.waterGoal + ' мл</span></div></div>' +
+      '<div class="leg"><span class="dot" style="background:#ff375f;color:#ff375f"></span><div><b>' + t.kcal + '</b><span>из ' + t.budget + ' ккал</span></div></div>' +
+      '<div class="leg"><span class="dot" style="background:#c6ff00;color:#c6ff00"></span><div><b>' + t.p + 'г</b><span>белок из ' + tg.protein + 'г</span></div></div>' +
+      '<div class="leg"><span class="dot" style="background:#1eeaef;color:#1eeaef"></span><div><b>' + (d.water || 0) + '</b><span>вода из ' + S.settings.waterGoal + ' мл</span></div></div>' +
       '</div>' +
       '</div>';
 
@@ -996,9 +1006,9 @@
       '</div>';
 
     html += '<div class="card"><div class="card-title">Белки · Жиры · Углеводы</div><div class="bars">' +
-      bar('Белок', t.p, tg.protein, 'г', '#34c759') +
+      bar('Белок', t.p, tg.protein, 'г', '#c6ff00') +
       bar('Жиры', t.f, tg.fat, 'г', '#ff9f0a') +
-      bar('Углев.', t.c, tg.carbs, 'г', '#0a84ff') +
+      bar('Углев.', t.c, tg.carbs, 'г', '#1eeaef') +
       '</div></div>';
 
     html += '<div class="card"><div class="card-title"><span>Вода</span><span class="mono">' + (d.water || 0) + ' / ' + S.settings.waterGoal + ' мл</span></div>' +
@@ -1154,21 +1164,24 @@
     var line = pts.map(function (p, i) { return x(i).toFixed(1) + ',' + y(p.w).toFixed(1); }).join(' ');
     var area = 'M' + x(0).toFixed(1) + ',' + (H - padB) + ' L' + line.split(' ').join(' L') + ' L' + x(pts.length - 1).toFixed(1) + ',' + (H - padB) + ' Z';
     var dots = pts.map(function (p, i) {
-      return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.w).toFixed(1) + '" r="2.6" fill="#0a84ff"/>';
+      return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.w).toFixed(1) + '" r="2.8" fill="#ff375f"/>';
     }).join('');
     var labels = [0, Math.floor(pts.length / 2), pts.length - 1].map(function (i) {
       var short = pts[i].k.split('-');
-      return '<text x="' + x(i).toFixed(1) + '" y="' + (H - 5) + '" font-size="9" fill="#8a8a8e" text-anchor="middle">' + short[2] + '.' + short[1] + '</text>';
+      return '<text x="' + x(i).toFixed(1) + '" y="' + (H - 5) + '" font-size="9" fill="#8e8e93" text-anchor="middle">' + short[2] + '.' + short[1] + '</text>';
     }).join('');
     var grid = [min, (min + max) / 2, max].map(function (v) {
-      return '<line x1="' + padL + '" y1="' + y(v).toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y(v).toFixed(1) + '" stroke="#ececf0" stroke-width="1"/>' +
-        '<text x="0" y="' + (y(v) + 3).toFixed(1) + '" font-size="9" fill="#8a8a8e">' + n1(v) + '</text>';
+      return '<line x1="' + padL + '" y1="' + y(v).toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y(v).toFixed(1) + '" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>' +
+        '<text x="0" y="' + (y(v) + 3).toFixed(1) + '" font-size="9" fill="#8e8e93">' + n1(v) + '</text>';
     }).join('');
 
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" height="150">' +
+      '<defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="rgba(255,55,95,0.35)"/><stop offset="100%" stop-color="rgba(255,55,95,0)"/>' +
+      '</linearGradient></defs>' +
       grid +
-      '<path d="' + area + '" fill="rgba(10,132,255,0.10)"/>' +
-      '<polyline points="' + line + '" fill="none" stroke="#0a84ff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<path d="' + area + '" fill="url(#chartGrad)"/>' +
+      '<polyline points="' + line + '" fill="none" stroke="#ff375f" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>' +
       dots + labels + '</svg>';
   }
 
