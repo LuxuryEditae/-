@@ -55,6 +55,39 @@ body {
     radial-gradient(900px 400px at 100% 20%, rgba(30, 234, 239, 0.06), transparent 60%),
     var(--bg);
   background-attachment: fixed;
+  overscroll-behavior: none;
+}
+
+/* Standalone (PWA on home screen): freeze body, scroll only main — no browser bounce */
+@media all and (display-mode: standalone) {
+  html, body {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+  }
+  body { padding-bottom: 0; }
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 20;
+  }
+  main {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 640px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-top: calc(env(safe-area-inset-top) + 64px);
+    padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px);
+  }
 }
 
 /* ---------- Верхняя панель ---------- */

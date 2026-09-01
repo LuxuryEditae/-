@@ -710,6 +710,115 @@
     openSheet('Анализ фото', html);
   }
 
+  /* ---------------- ИИ: запись словами ---------------- */
+  var TEXT_PROMPT = 'Ты — нутрициолог. Пользователь описывает, что он съел или собирается съесть. ' +
+    'Разбери сообщение на отдельные продукты, оцени вес порций в граммах и посчитай КБЖУ.\n' +
+    'Ответь ТОЛЬКО валидным JSON, без markdown и без пояснений, строго в формате:\n' +
+    '{"meal":"breakfast|lunch|dinner|snack","items":[{"name":"продукт","grams":150,"kcal":210,"p":10,"f":8,"c":25}],"comment":"короткий комментарий на русском, одно предложение"}\n' +
+    'Правила: числа без единиц; если приём пищи не указан явно — угадай по контексту (утро=breakfast, день=lunch, вечер=dinner, иначе snack); ' +
+    'если пользователь написал не про еду — верни {"error":"Не понял, что за еда. Опиши подробнее — например: борщ 300 г и хлеб."}. ' +
+    'Оценивай порции реалистично. Если не указан вес — прикинь стандартную порцию.';
+
+  var textFood = { input: '', items: [], meal: 'snack', comment: '', busy: false, error: '' };
+
+  function openTextFood() {
+    var cfg = aiCfg();
+    if (!cfg.key) { toast('Добавь API-ключ в Профиле'); view.screen = 'profile'; render(); return; }
+    textFood = { input: '', items: [], meal: guessMeal(), comment: '', busy: false, error: '' };
+    sheetState.mode = 'text-food';
+    renderTextFoodSheet();
+  }
+
+  function renderTextFoodSheet() {
+    var html = '';
+
+    if (textFood.busy) {
+      html = '<div style="text-align:center;padding:36px 0"><span class="spinner"></span>' +
+        '<div class="small muted" style="margin-top:10px">ИИ разбирает…</div></div>';
+    } else if (textFood.items.length) {
+      var sum = textFood.items.reduce(function (a, it) { return a + (it.kcal || 0); }, 0);
+      var leftNow = totals(view.date).left;
+      var after = Math.round(leftNow - sum);
+
+      if (textFood.comment) {
+        html += '<div class="card"><div class="card-title"><span class="badge-ai">ИИ</span></div>' +
+          '<div class="small muted" style="line-height:1.5">' + esc(textFood.comment) + '</div>' +
+          '</div>';
+      }
+      html += '<div class="card"><div class="card-title"><span>Что нашёл</span><span class="mono">' + Math.round(sum) + ' ккал</span></div>' +
+        '<div class="' + (after >= 0 ? 'plan-ok' : 'plan-over') + '" style="margin-bottom:8px">' +
+        (after >= 0 ? 'Если добавишь — останется ' + after + ' ккал' : 'Это на ' + Math.abs(after) + ' ккал больше остатка') +
+        '</div>';
+      textFood.items.forEach(function (it, i) {
+        html += '<div class="ai-item"><div class="food-main"><div class="food-name">' + esc(it.name) + '</div>' +
+          '<div class="food-sub mono">' + it.grams + ' г · Б ' + n1(it.p) + ' · Ж ' + n1(it.f) + ' · У ' + n1(it.c) + '</div></div>' +
+          '<div class="food-kcal mono">' + Math.round(it.kcal) + '</div>' +
+          '<button class="icon-btn" data-act="text-del" data-i="' + i + '">✕</button></div>';
+      });
+      html += '</div>';
+      html += '<div class="card"><div class="card-title">Приём пищи</div><div class="water-row">' +
+        MEALS.map(function (m) {
+          return '<button class="chip' + (textFood.meal === m.id ? ' is-on' : '') + '" data-act="text-meal" data-m="' + m.id + '">' + m.name + '</button>';
+        }).join('') + '</div></div>';
+      html += '<button class="btn" data-act="text-add">Добавить в дневник</button>' +
+        '<div style="height:8px"></div><button class="btn secondary" data-act="text-again">Ввести другое</button>' +
+        '<div style="height:8px"></div><button class="btn ghost" data-act="close-sheet">Отмена</button>';
+    } else {
+      if (textFood.error) {
+        html += '<div class="warn" style="margin-bottom:12px">' + esc(textFood.error) + '</div>';
+      }
+      html += '<label class="field"><span>Что съел?</span>' +
+        '<textarea id="tfInput" rows="4" placeholder="Например: борщ 300 г со сметаной, кусок чёрного хлеба и яблоко" style="min-height:100px">' + esc(textFood.input) + '</textarea>' +
+        '</label>' +
+        '<div class="small muted" style="margin-bottom:14px;line-height:1.5">' +
+        'Опиши свободным текстом — ИИ сам разберёт на продукты и посчитает калории.' +
+        '</div>' +
+        '<button class="btn" data-act="text-parse">Разобрать</button>' +
+        '<div style="height:8px"></div><button class="btn ghost" data-act="close-sheet">Отмена</button>';
+    }
+
+    openSheet('Записать словами', html);
+    var ta = document.getElementById('tfInput');
+    if (ta) { ta.focus(); moveCursorEnd(ta); }
+  }
+
+  function parseTextFood() {
+    var ta = document.getElementById('tfInput');
+    var input = ((ta && ta.value) || textFood.input || '').trim();
+    if (!input) return toast('Опиши, что съел');
+    textFood.input = input;
+    textFood.busy = true;
+    textFood.error = '';
+    renderTextFoodSheet();
+
+    var cfg = aiCfg();
+    aiCall([{ role: 'user', content: TEXT_PROMPT + '\n\nСообщение пользователя: ' + input }], cfg.model).then(function (text) {
+      var j = extractJson(text);
+      if (!j) throw new Error('ИИ ответил непонятно. Попробуй переформулировать.');
+      if (j.error) throw new Error(String(j.error));
+      var items = (j.items || []).filter(function (it) { return it && it.name; }).map(function (it) {
+        return {
+          name: String(it.name).slice(0, 80),
+          grams: Math.max(1, Math.round(Number(it.grams) || 100)),
+          kcal: Math.max(0, Number(it.kcal) || 0),
+          p: Math.max(0, Number(it.p) || 0),
+          f: Math.max(0, Number(it.f) || 0),
+          c: Math.max(0, Number(it.c) || 0)
+        };
+      });
+      if (!items.length) throw new Error('Не нашёл продуктов. Опиши подробнее.');
+      textFood.items = items;
+      if (j.meal && ['breakfast', 'lunch', 'dinner', 'snack'].indexOf(j.meal) >= 0) textFood.meal = j.meal;
+      textFood.comment = String(j.comment || '').slice(0, 300);
+      textFood.busy = false;
+      renderTextFoodSheet();
+    }).catch(function (err) {
+      textFood.busy = false;
+      textFood.error = errText(err);
+      renderTextFoodSheet();
+    });
+  }
+
   /* ---------------- ИИ-менеджер: меню под остаток ---------------- */
   var plan = { items: [], comment: '', busy: false, error: '', closed: false };
 
@@ -884,7 +993,8 @@
   function renderTop() {
     var box = $('#topbarRight');
     if (view.screen === 'today' || view.screen === 'diary') {
-      box.innerHTML = '<button class="chip" data-act="add-food">+ Еда</button>';
+      box.innerHTML = '<button class="chip" data-act="text-food" aria-label="Записать словами">✨ ИИ</button>' +
+        '<button class="chip" data-act="add-food">+ Еда</button>';
     } else if (view.screen === 'progress') {
       box.innerHTML = '<button class="chip" data-act="set-weight">+ Вес</button>';
     } else if (view.screen === 'ai') {
@@ -1593,6 +1703,29 @@
         view.screen = 'today';
         render();
         return toast('Меню добавлено в дневник');
+      }
+      if (act === 'text-food') return openTextFood();
+      if (act === 'text-parse') return parseTextFood();
+      if (act === 'text-again') { textFood.items = []; textFood.comment = ''; return renderTextFoodSheet(); }
+      if (act === 'text-meal') { textFood.meal = el.dataset.m; return renderTextFoodSheet(); }
+      if (act === 'text-del') {
+        textFood.items.splice(Number(el.dataset.i), 1);
+        if (!textFood.items.length) return closeSheet();
+        return renderTextFoodSheet();
+      }
+      if (act === 'text-add') {
+        if (!textFood.items.length) return closeSheet();
+        textFood.items.forEach(function (it) {
+          day(view.date).meals.push({
+            id: String(Date.now()) + Math.random().toString(36).slice(2, 6),
+            name: it.name, grams: it.grams, meal: textFood.meal,
+            kcal: it.kcal, p: it.p, f: it.f, c: it.c
+          });
+        });
+        save(); closeSheet();
+        view.screen = 'today';
+        render();
+        return toast('Добавлено: ' + textFood.items.length + ' поз.');
       }
       if (act === 'take-photo') { var ci = document.getElementById('photoCamera'); if (ci) ci.click(); return; }
       if (act === 'pick-photo') { var gi2 = document.getElementById('photoGallery'); if (gi2) gi2.click(); return; }
